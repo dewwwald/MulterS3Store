@@ -1,7 +1,8 @@
 /* eslint-env mocha */
 
-var multerS3 = require('../')
-
+const multerS3StoreLib = require('../dist')
+const { AUTO_CONTENT_TYPE } = multerS3StoreLib;
+const MulterS3Store = multerS3StoreLib.default;
 var fs = require('fs')
 var path = require('path')
 var extend = require('xtend')
@@ -15,13 +16,6 @@ var mockS3 = require('./util/mock-s3')
 var VALID_OPTIONS = {
   bucket: 'string'
 }
-
-var INVALID_OPTIONS = [
-  ['numeric key', { key: 1337 }],
-  ['string key', { key: 'string' }],
-  ['numeric bucket', { bucket: 1337 }],
-  ['numeric contentType', { contentType: 1337 }]
-]
 
 function submitForm (multer, form, cb) {
   form.getLength(function (err, length) {
@@ -46,25 +40,15 @@ function submitForm (multer, form, cb) {
   })
 }
 
-describe('Multer S3', function () {
-  it('is exposed as a function', function () {
-    assert.equal(typeof multerS3, 'function')
-  })
-
-  INVALID_OPTIONS.forEach(function (testCase) {
-    it('throws when given ' + testCase[0], function () {
-      function testBody () {
-        multerS3(extend(VALID_OPTIONS, testCase[1]))
-      }
-
-      assert.throws(testBody, TypeError)
-    })
+describe('MulterS3Store', function () {
+  it('is exposed as a class', function () {
+    assert.equal(typeof MulterS3Store, 'function')
   })
 
   it('upload files', function (done) {
     var s3 = mockS3()
     var form = new FormData()
-    var storage = multerS3({ s3: s3, bucket: 'test' })
+    var storage = new MulterS3Store({ s3: s3, bucket: 'test' })
     var upload = multer({ storage: storage })
     var parser = upload.single('image')
     var image = fs.createReadStream(path.join(__dirname, 'files', 'ffffff.png'))
@@ -91,7 +75,7 @@ describe('Multer S3', function () {
   it('uploads file with AES256 server-side encryption', function (done) {
     var s3 = mockS3()
     var form = new FormData()
-    var storage = multerS3({ s3: s3, bucket: 'test', serverSideEncryption: 'AES256' })
+    var storage = new MulterS3Store({ s3: s3, bucket: 'test', serverSideEncryption: 'AES256' })
     var upload = multer({ storage: storage })
     var parser = upload.single('image')
     var image = fs.createReadStream(path.join(__dirname, 'files', 'ffffff.png'))
@@ -119,7 +103,7 @@ describe('Multer S3', function () {
   it('uploads file with AWS KMS-managed server-side encryption', function (done) {
     var s3 = mockS3()
     var form = new FormData()
-    var storage = multerS3({ s3: s3, bucket: 'test', serverSideEncryption: 'aws:kms' })
+    var storage = new MulterS3Store({ s3: s3, bucket: 'test', serverSideEncryption: 'aws:kms' })
     var upload = multer({ storage: storage })
     var parser = upload.single('image')
     var image = fs.createReadStream(path.join(__dirname, 'files', 'ffffff.png'))
@@ -147,7 +131,7 @@ describe('Multer S3', function () {
   it('uploads PNG file with correct content-type', function (done) {
     var s3 = mockS3()
     var form = new FormData()
-    var storage = multerS3({ s3: s3, bucket: 'test', serverSideEncryption: 'aws:kms', contentType: multerS3.AUTO_CONTENT_TYPE })
+    var storage = new MulterS3Store({ s3: s3, bucket: 'test', serverSideEncryption: 'aws:kms', contentType: AUTO_CONTENT_TYPE })
     var upload = multer({ storage: storage })
     var parser = upload.single('image')
     var image = fs.createReadStream(path.join(__dirname, 'files', 'ffffff.png'))
@@ -176,7 +160,7 @@ describe('Multer S3', function () {
   it('uploads SVG file with correct content-type', function (done) {
     var s3 = mockS3()
     var form = new FormData()
-    var storage = multerS3({ s3: s3, bucket: 'test', serverSideEncryption: 'aws:kms', contentType: multerS3.AUTO_CONTENT_TYPE })
+    var storage = new MulterS3Store({ s3: s3, bucket: 'test', serverSideEncryption: 'aws:kms', contentType: AUTO_CONTENT_TYPE })
     var upload = multer({ storage: storage })
     var parser = upload.single('image')
     var image = fs.createReadStream(path.join(__dirname, 'files', 'test.svg'))
