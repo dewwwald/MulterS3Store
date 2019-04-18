@@ -5,6 +5,7 @@ import stream from 'stream';
 import fileType from 'file-type';
 import isSvg from 'is-svg';
 import parallel from 'run-parallel';
+import { S3 } from 'aws-sdk';
 
 function staticValue (value): MulterS3StoreFunction {
   return function (req: any, file: any, cb: MulterS3StoreCallbackFunction) {
@@ -49,17 +50,17 @@ function autoContentType (req, file, cb) {
 }
 
 export default class MulterS3Storage {
-  s3;
+  s3: S3;
   getBucket: MulterS3StoreFunction;
   getKey: MulterS3StoreFunction;
-  getAcl;
-  getContentType;
-  getMetadata;
-  getCacheControl;
-  getContentDisposition;
-  getStorageClass;
-  getSSE;
-  getSSEKMS;
+  getAcl: MulterS3StoreFunction;
+  getMetadata: MulterS3StoreFunction;
+  getCacheControl: MulterS3StoreFunction;
+  getContentDisposition: MulterS3StoreFunction;
+  getStorageClass: MulterS3StoreFunction;
+  getSSE: MulterS3StoreFunction;
+  getSSEKMS: MulterS3StoreFunction;
+  getContentType: MulterS3StoreFunction;
 
   private collect(req: any, file: any, cb: MulterS3StoreCallbackFunction) {
     parallel([
@@ -102,55 +103,55 @@ export default class MulterS3Storage {
     this.getKey = opts.key || defaultKey;
 
     switch (typeof opts.bucket) {
-      case 'function': this.getBucket = opts.bucket; break
+      case 'function': this.getBucket = <MulterS3StoreFunction>opts.bucket; break
       case 'string': this.getBucket = staticValue(opts.bucket); break
       default: throw new TypeError('Expected opts.bucket to be undefined, string or function')
     }
   
     switch (typeof opts.acl) {
-      case 'function': this.getAcl = opts.acl; break
+      case 'function': this.getAcl = <MulterS3StoreFunction>opts.acl; break
       case 'string': this.getAcl = staticValue(opts.acl); break
-      case 'undefined': this.getAcl = defaultAcl; break
+      default: this.getAcl = defaultAcl; break
     }
   
     switch (typeof opts.contentType) {
-      case 'function': this.getContentType = opts.contentType; break
-      case 'undefined': this.getContentType = defaultContentType; break
+      case 'function': this.getContentType = <MulterS3StoreFunction>opts.contentType; break
+      default: this.getContentType = defaultContentType; break
     }
   
     switch (typeof opts.metadata) {
-      case 'function': this.getMetadata = opts.metadata; break
-      case 'undefined': this.getMetadata = defaultMetadata; break
+      case 'function': this.getMetadata = <MulterS3StoreFunction>opts.metadata; break
+      default: this.getMetadata = defaultMetadata; break
     }
   
     switch (typeof opts.cacheControl) {
-      case 'function': this.getCacheControl = opts.cacheControl; break
+      case 'function': this.getCacheControl = <MulterS3StoreFunction>opts.cacheControl; break
       case 'string': this.getCacheControl = staticValue(opts.cacheControl); break
-      case 'undefined': this.getCacheControl = defaultCacheControl; break
+      default: this.getCacheControl = defaultCacheControl; break
     }
   
     switch (typeof opts.contentDisposition) {
-      case 'function': this.getContentDisposition = opts.contentDisposition; break
+      case 'function': this.getContentDisposition = <MulterS3StoreFunction>opts.contentDisposition; break
       case 'string': this.getContentDisposition = staticValue(opts.contentDisposition); break
-      case 'undefined': this.getContentDisposition = defaultContentDisposition; break
+      default: this.getContentDisposition = defaultContentDisposition; break
     }
   
     switch (typeof opts.storageClass) {
-      case 'function': this.getStorageClass = opts.storageClass; break
+      case 'function': this.getStorageClass = <MulterS3StoreFunction>opts.storageClass; break
       case 'string': this.getStorageClass = staticValue(opts.storageClass); break
-      case 'undefined': this.getStorageClass = defaultStorageClass; break
+      default: this.getStorageClass = defaultStorageClass; break
     }
   
     switch (typeof opts.serverSideEncryption) {
-      case 'function': this.getSSE = opts.serverSideEncryption; break
+      case 'function': this.getSSE = <MulterS3StoreFunction>opts.serverSideEncryption; break
       case 'string': this.getSSE = staticValue(opts.serverSideEncryption); break
-      case 'undefined': this.getSSE = defaultSSE; break
+      default: this.getSSE = defaultSSE; break
     }
   
     switch (typeof opts.sseKmsKeyId) {
-      case 'function': this.getSSEKMS = opts.sseKmsKeyId; break
+      case 'function': this.getSSEKMS = <MulterS3StoreFunction>opts.sseKmsKeyId; break
       case 'string': this.getSSEKMS = staticValue(opts.sseKmsKeyId); break
-      case 'undefined': this.getSSEKMS = defaultSSEKMS; break
+      default: this.getSSEKMS = defaultSSEKMS; break
     }
   }
 
@@ -180,13 +181,13 @@ export default class MulterS3Storage {
     
         const upload = this.s3.upload(params);
     
-        upload.on('httpUploadProgress', function (event) {
+        upload.on('httpUploadProgress', (event) => {
           if (event.total) {
             currentSize = event.total;
           }
         });
     
-        upload.send(function (err: Error, result) {
+        upload.send((err: Error, result: S3.ManagedUpload.SendData) => {
           if (err) {
             cb(err);
           } else {
@@ -202,7 +203,13 @@ export default class MulterS3Storage {
               "metadata": opts.metadata,
               "location": result.Location,
               "etag": result.ETag,
-              "versionId": result.VersionId
+              "Key": result.Key,
+              "Bucket": result.Bucket,
+
+              /**
+               * Was in the forked version, amended to work with TS
+               */
+              "versionId": (<any>result).VersionId
             });
           }
         });

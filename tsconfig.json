@@ -1,15 +1,19 @@
 {
   "compilerOptions": {
     "target": "es5",
+    "lib": ["es2015"],
     "module": "commonjs",
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
+    "declaration": true,
     "noImplicitAny": false,
     "typeRoots": [
       "./src"
     ],
     "types": [
+      "bluebird",
+      "core-js",
       "node"
     ],
     "esModuleInterop": true
