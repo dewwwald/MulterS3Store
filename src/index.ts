@@ -203,7 +203,6 @@ export default class MulterS3Storage {
               "metadata": opts.metadata,
               "location": result.Location,
               "etag": result.ETag,
-              "Key": result.Key,
               "Bucket": result.Bucket,
 
               /**
